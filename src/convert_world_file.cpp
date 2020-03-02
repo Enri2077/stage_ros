@@ -28,14 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <signal.h>
-
-#include <chrono>
-#include <iostream>
-#include <thread>
 
 
 // libstage
@@ -57,6 +50,8 @@
 #include <std_srvs/Empty.h>
 
 #include "tf/transform_broadcaster.h"
+
+#include <yaml.h>
 
 #define USAGE "stageros <worldfile>"
 #define IMAGE "image"
@@ -243,6 +238,8 @@ StageNode::ghfunc(Stg::Model* mod, StageNode* node)
       // remember initial poses
       node->positionmodels.push_back(p);
       node->initial_poses.push_back(p->GetGlobalPose());
+
+      std::cout << "name: " << "x: " << (p->GetGlobalPose().x) << " y: " << (p->GetGlobalPose().y) << std::endl;
     }
   if (dynamic_cast<Stg::ModelCamera *>(mod)) {
      node->cameramodels.push_back(dynamic_cast<Stg::ModelCamera *>(mod));
@@ -447,6 +444,10 @@ StageNode::WorldCallback()
     for (size_t r = 0; r < this->robotmodels_.size(); ++r)
     {
         StageRobot const * robotmodel = this->robotmodels_[r];
+
+
+        bool colliding = robotmodel->positionmodel->HasCollision();
+        std::cout << "collision: " << (colliding?"true":"false") << std::endl;
 
         //loop on the laser devices for the current robot
         for (size_t s = 0; s < robotmodel->lasermodels.size(); ++s)
@@ -776,29 +777,29 @@ main(int argc, char** argv)
     if(sn.SubscribeModels() != 0)
         exit(-1);
 
+    boost::thread t = boost::thread(boost::bind(&ros::spin));
+
+    Stg::Model* robot = sn.world->GetModel("robot");
+    Stg::Pose initial_pose = robot->GetPose();
+    Stg::point_t initial_position = Stg::point_t(initial_pose.x, initial_pose.y);
+    Stg::point_int_t initial_position_map = sn.world->MetersToPixels(initial_position);
+    std::cout << initial_position.x << ", " << initial_position.y << std::endl;
+    std::cout << initial_position_map.x << ", " << initial_position_map.y << std::endl;
+
+    Stg::Model* floorplan = sn.world->GetModel("8-1");
+    Stg::Pose floorplan_pose = floorplan->GetPose();
+    Stg::point_t floorplan_position = Stg::point_t(floorplan_pose.x, floorplan_pose.y);
+    Stg::point_int_t floorplan_position_map = sn.world->MetersToPixels(floorplan_position);
+    std::cout << floorplan_position.x << ", " << floorplan_position.y << std::endl;
+    std::cout << floorplan_position_map.x << ", " << floorplan_position_map.y << std::endl;
+
+
+
     sn.world->Start();
 
-    if(gui){
+    Stg::World::Run();
 
-        boost::thread t = boost::thread(boost::bind(&ros::spin));
-        sn.world->Run();
-        t.join();
-
-    } else {
-
-        using namespace std::chrono;
-        auto next_tick = steady_clock::now();
-        microseconds rate_duration = microseconds(sn.world->sim_interval);
-
-        while (ros::ok()){
-            sn.UpdateWorld();
-
-            next_tick += rate_duration;
-            std::this_thread::sleep_until(next_tick);
-
-        }
-    }
-
+    t.join();
 
     exit(0);
 }

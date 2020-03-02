@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(stage_ros)
+project(stage_ros_pm)
 
 find_package(catkin REQUIRED
   COMPONENTS
@@ -23,6 +23,23 @@ include_directories(
 )
 
 catkin_package()
+
+# Declare a cpp executable
+add_executable(convert_world_file src/convert_world_file.cpp)
+set(${PROJECT_NAME}_extra_libs "")
+if(UNIX AND NOT APPLE)
+  set(${PROJECT_NAME}_extra_libs dl)
+endif()
+target_link_libraries(convert_world_file
+        ${catkin_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${STAGE_LIBRARIES}
+        ${${PROJECT_NAME}_extra_libs}
+        yaml-cpp
+        )
+if(catkin_EXPORTED_TARGETS)
+  add_dependencies(convert_world_file ${catkin_EXPORTED_TARGETS})
+endif()
 
 # Declare a cpp executable
 add_executable(stageros src/stageros.cpp)
