@@ -572,7 +572,7 @@ StageNode::WorldCallback()
         ground_truth_msg.twist.twist.linear.z = gvel.z;
         ground_truth_msg.twist.twist.angular.z = gvel.a;
 
-        ground_truth_msg.header.frame_id = mapName("odom", r, static_cast<Stg::Model*>(robotmodel->positionmodel));
+        ground_truth_msg.header.frame_id = mapName("map", r, static_cast<Stg::Model*>(robotmodel->positionmodel));
         ground_truth_msg.header.stamp = sim_time;
 
         robotmodel->ground_truth_pub.publish(ground_truth_msg);
