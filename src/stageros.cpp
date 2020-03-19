@@ -792,6 +792,7 @@ main(int argc, char** argv)
 
         while (ros::ok()){
             sn.UpdateWorld();
+            ros::spinOnce();
 
             next_tick += rate_duration;
             std::this_thread::sleep_until(next_tick);
